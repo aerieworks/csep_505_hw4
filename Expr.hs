@@ -24,11 +24,27 @@ data Type = NumT
           | ForAllT TVar Type
           | VarT TVar
 
+sndLookup :: Eq b => b -> [(a, b)] -> Maybe a
+sndLookup b list = case list of
+  [] -> Nothing
+  (x, y):rest -> if y == b then Just x else sndLookup b rest
+
 -- alphaEquiv determines whether two types are equivalent up to alpha
 -- renaming of type variables.
 -- Problem 1.
 alphaEquiv :: Type -> Type -> [(TVar, TVar)] -> Bool
-alphaEquiv type1 type2 typeVariableMap = False -- implement me!
+alphaEquiv type1 type2 typeVariableMap = case (type1, type2) of
+  (NumT, NumT) -> True
+  (BoolT, BoolT) -> True
+  (StringT, StringT) -> True
+  (ArrowT t1In t1Out, ArrowT t2In t2Out) -> (alphaEquiv t1In t2In typeVariableMap) && (alphaEquiv t1Out t2Out typeVariableMap)
+  (PairT t1Left t1Right, PairT t2Left t2Right) -> (alphaEquiv t1Left t2Left typeVariableMap) && (alphaEquiv t1Right t2Right typeVariableMap)
+  (ListT t1, ListT t2) -> alphaEquiv t1 t2 typeVariableMap
+  (ForAllT v1 t1, ForAllT v2 t2) -> alphaEquiv t1 t2 ((v1, v2):typeVariableMap)
+  (VarT v1, VarT v2) -> case (lookup v1 typeVariableMap, sndLookup v2 typeVariableMap) of
+    (Just x, Just y) -> x == v2 && y == v1 -- Alpha-renaming
+    (Nothing, Nothing) -> v1 == v2         -- Free variable types match.
+  otherwise -> False
 
 instance Eq Type where
   t1 == t2 = alphaEquiv t1 t2 []
