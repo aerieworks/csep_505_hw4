@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars) where
 
 import Data.Char
 import Data.List
@@ -14,7 +14,13 @@ type TyContext = ([TVar], [(TVar, Type)])
 
 -- Problem 2.
 freeTypeVars :: Type -> [TVar] -> [TVar]
-freeTypeVars ty bound = [] -- implement me!
+freeTypeVars ty bound = case ty of
+  ArrowT t1 t2 -> (freeTypeVars t1 bound) ++ (freeTypeVars t2 bound)
+  PairT t1 t2 -> (freeTypeVars t1 bound) ++ (freeTypeVars t2 bound)
+  ListT t -> freeTypeVars t bound
+  ForAllT v t -> freeTypeVars t (v:bound)
+  VarT v -> if v `elem` bound then [] else v:[]
+  otherwise -> []
 
 -- Problem 3.
 alphaRename :: TVar -> TVar -> Type -> Type

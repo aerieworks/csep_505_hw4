@@ -2,8 +2,9 @@ module TestCases where
 
 import Expr
 import Result
+import TypeCheck
 
-testCases = [
+problem1Tests = [
   (VarT "c", VarT "c", True),
   (VarT "d", VarT "e", False),
   ((ForAllT "x" (VarT "x")), (ForAllT "y" (VarT "y")), True),
@@ -28,10 +29,25 @@ testCases = [
     False)
   ]
 
-runTest (t1, t2, expected) =
+runProblem1Test (t1, t2, expected) =
   case ((t1 == t2) == expected) of
     True -> Ok ""
     False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show t1) ++ " == " ++ (show t2))
 
-runAllTests =
-  map runTest testCases
+runProblem1Tests =
+  map runProblem1Test problem1Tests
+
+problem2Tests = [
+  ((ArrowT (VarT "a") BoolT), ["a"]),
+  ((ForAllT "a" (PairT (VarT "b") (VarT "a"))), ["b"]),
+  ((ForAllT "a" (PairT NumT (VarT "a"))), [])
+  ]
+
+runProblem2Test (t, expected) =
+  case (freeTypeVars t []) == expected of
+    True -> Ok ""
+    False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show t))
+
+runProblem2Tests =
+  map runProblem2Test problem2Tests
+
