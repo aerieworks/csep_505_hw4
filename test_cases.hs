@@ -133,8 +133,27 @@ problem5Tests = [
   ("(fun ([x : num] [y : bool]) (if (< x y) x y))", Err "Function requires num but was called with bool"),
   ("(fun ([x : bool]) (if x + *))", Ok (ArrowT BoolT (ArrowT NumT (ArrowT NumT NumT)))),
   ("(fun ([op : (num -> (num -> num))] [x : num] [y : num]) (op x y))",
-    Ok (ArrowT (ArrowT NumT (ArrowT NumT NumT)) (ArrowT NumT (ArrowT NumT NumT))))
-  --("(forall (a) (fun ([x : a] [l : (list num)]) (cons x l)))", Ok (ForAllT "a" (ArrowT (VarT "a") (ArrowT (ListT NumT) (ListT (VarT "a"))))))
+    Ok (ArrowT (ArrowT NumT (ArrowT NumT NumT)) (ArrowT NumT (ArrowT NumT NumT)))),
+  ("(forall (a) (fun ([x : a]) ((cons <a>) x (empty <a>))))",
+    Ok (ForAllT "a" (ArrowT (VarT "a") (ListT (VarT "a"))))),
+  ("(forall (a) (fun ([x : a] [l : (list a)]) ((cons <a>) x l)))",
+    Ok (ForAllT "a" (ArrowT (VarT "a") (ArrowT (ListT (VarT "a")) (ListT (VarT "a")))))),
+
+  ("1", Ok (NumT)),
+  ("(+ 2 4)", Ok (NumT)),
+  ("(fun ([x : num]) (= x 5))", Ok (ArrowT NumT BoolT)),
+  ("(with* ([id (forall (a) (fun ([y : a]) y))] [selfapp (fun ([x : (forall a.(a -> a))]) ((x <(forall b.(b -> b))>) x))]) (selfapp id))",
+    Ok (ForAllT "b" (ArrowT (VarT "b") (VarT "b")))),
+  ("(with* ([two (forall (a) (fun ([s : (a -> a)] [z : a]) (s (s z))))] " ++
+           "[add (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                  "[m : ((a -> a) -> (a -> a))] " ++
+                                  "[s : (a -> a)] " ++
+                                  "[z : a]) ((n s) (m s z))))] " ++
+           "[mult (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                   "[m : ((a -> a) -> (a -> a))] " ++
+                                   "[s : (a -> a)]) (n (m s))))]) " ++
+    "(((mult <num>) ((add <num>) (two <num>) (two <num>)) (two <num>)) (+ 1) 0))",
+    Ok (NumT))
   ]
 
 runProblem5Test (inputStr, expected) =

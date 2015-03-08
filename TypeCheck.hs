@@ -94,11 +94,17 @@ checkType expr gamma = case expr of
          otherwise -> Err ("Application expects applicable, but found " ++ (show appType))
   WithD var argExpr bodyExpr ->
     do inType <- checkType argExpr gamma
-       checkTypeApplicable var inType bodyExpr gamma
+       ArrowT inType outType <- checkTypeApplicable var inType bodyExpr gamma
+       Ok outType
   ForAllD tVar bodyExpr ->
     do bodyType <- checkType bodyExpr gamma
        Ok (ForAllT tVar bodyType)
-  SpecD expr t -> Err "Not implemented yet."
+  SpecD expr specType ->
+    do exprType <- checkType expr gamma
+       case exprType of
+         ForAllT tVar bodyType -> Ok (subst tVar specType bodyType)
+         otherwise ->
+           Err ("Instantiation expects a polymorphic type, but found " ++ (show exprType))
 
 checkTypeApplicable :: Var -> Type -> DExpr -> TyContext -> Result Type
 checkTypeApplicable var inType body gamma =
