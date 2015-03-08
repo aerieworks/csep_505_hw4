@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst) where
 
 import Data.Char
 import Data.List
@@ -41,7 +41,28 @@ checkClosed ty bound =
 
 -- Problem 4.
 subst :: TVar -> Type -> Type -> Type
-subst var forType inType = inType -- implement me!
+subst var forType inType =
+  let capturableTVars = freeTypeVars forType []
+      allInTVars = allTypeVars inType
+  in substInner var forType inType capturableTVars (capturableTVars ++ allInTVars)
+
+substInner :: TVar -> Type -> Type -> [TVar] -> [TVar] -> Type
+substInner var forType inType capturableTVars existingTVars = case inType of
+  VarT v -> (if v == var then forType else inType)
+  ForAllT v t -> if v == var then inType else
+    case v `elem` capturableTVars of
+      True ->
+        let v' = (genFreshVar existingTVars)
+        in (substInner var forType (alphaRename v v' inType) capturableTVars (v':existingTVars))
+      False -> ForAllT v (substInner var forType t capturableTVars existingTVars)
+  ArrowT t1 t2 -> (ArrowT
+    (substInner var forType t1 capturableTVars existingTVars)
+    (substInner var forType t2 capturableTVars existingTVars))
+  PairT t1 t2 -> (PairT
+    (substInner var forType t1 capturableTVars existingTVars)
+    (substInner var forType t2 capturableTVars existingTVars))
+  ListT t -> (ListT (substInner var forType t capturableTVars existingTVars))
+  otherwise -> inType
 
 -- Problem 5.
 checkType :: DExpr -> TyContext -> Result Type

@@ -71,3 +71,34 @@ runProblem3Test (vIn, vOut, t, expected) =
 
 runProblem3Tests =
   map runProblem3Test problem3Tests
+
+
+problem4Tests = [
+  ("a", NumT, (ArrowT (VarT "a") (VarT "a")), (ArrowT NumT NumT)),
+  ("b", (PairT NumT BoolT), (ListT (VarT "b")), (ListT (PairT NumT BoolT))),
+  ("a", NumT, (PairT (VarT "a") (ForAllT "a" (ArrowT (VarT "a") (VarT "a")))), (PairT NumT (ForAllT "a" (ArrowT (VarT "a") (VarT "a"))))),
+  ("a", (PairT BoolT (VarT "b")), (ForAllT "b" (ArrowT (VarT "a") (VarT "b"))), (ForAllT "c" (ArrowT (PairT BoolT (VarT "b")) (VarT "c")))),
+  ("a", NumT, (ForAllT "c" (VarT "f")), (ForAllT "c" (VarT "f"))),
+  ("a", BoolT, (ForAllT "a" (VarT "a")), (ForAllT "a" (VarT "a"))),
+  ("a", BoolT, (ForAllT "a" (VarT "b")), (ForAllT "a" (VarT "b"))),
+  ("a", BoolT, (ForAllT "b" (VarT "a")), (ForAllT "b" BoolT)),
+  ("a", BoolT, (ForAllT "b" (VarT "b")), (ForAllT "b" (VarT "b"))),
+  ("b", BoolT, (ForAllT "a" (VarT "a")), (ForAllT "a" (VarT "a"))),
+  ("b", BoolT, (ForAllT "a" (VarT "b")), (ForAllT "a" BoolT)),
+  ("b", BoolT, (ForAllT "b" (VarT "a")), (ForAllT "b" (VarT "a"))),
+  ("b", BoolT, (ForAllT "b" (VarT "b")), (ForAllT "b" (VarT "b"))),
+  ("a",
+    (ForAllT "b" (ArrowT (VarT "c") (VarT "b"))),
+    (ArrowT (ForAllT "c" (ArrowT (VarT "c") (VarT "a"))) (VarT "b")),
+    (ArrowT (ForAllT "d" (ArrowT (VarT "d") (ForAllT "b" (ArrowT (VarT "c") (VarT "b"))))) (VarT "b")))
+  ]
+
+runProblem4Test (v, forType, inType, expected) =
+  let actual = (subst v forType inType)
+  in case actual == expected of
+    True -> Ok ""
+    False -> Err ("Expected: " ++ (show expected) ++ "; Actual: " ++ (show actual))
+
+runProblem4Tests =
+  map runProblem4Test problem4Tests
+
