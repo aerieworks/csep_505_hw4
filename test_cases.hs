@@ -103,9 +103,53 @@ runProblem4Tests =
   map runProblem4Test problem4Tests
 
 
+problem5Tests = [
+  ("5", Ok (NumT)),
+  ("\"abc\"", Ok (StringT)),
+  ("x", Err "Untyped variable `\"x\"`"),
+  ("true", Ok (BoolT)),
+  ("false", Ok (BoolT)),
+  ("+", Ok (ArrowT NumT (ArrowT NumT NumT))),
+  ("(+ 5)", Ok (ArrowT NumT NumT)),
+  ("(+ 5 3)", Ok (NumT)),
+  ("(+ false)", Err "Function requires num but was called with bool"),
+  ("(+ 5 false)", Err "Function requires num but was called with bool"),
+  ("=", Ok (ArrowT NumT (ArrowT NumT BoolT))),
+  ("(= 5)", Ok (ArrowT NumT BoolT)),
+  ("(= 5 3)", Ok (BoolT)),
+  ("(= false)", Err "Function requires num but was called with bool"),
+  ("(= 5 false)", Err "Function requires num but was called with bool"),
+  ("(= + *)", Err "Function requires num but was called with (num -> (num -> num))"),
+  ("(if (= 5 3) 1 2)", Ok (NumT)),
+  ("(if (= 5 3) false true)", Ok (BoolT)),
+  ("(if (+ 5 3) false true)", Err "If expression expects boolean condition, but found num"),
+  ("(if = false true)", Err "If expression expects boolean condition, but found (num -> (num -> bool))"),
+  ("(if (= 5 3) 5 true)",
+    Err "Type mismatch between if expression condition and alternate: num != bool"),
+  ("(fun ([x : num]) (* x x))", Ok (ArrowT NumT NumT)),
+  ("(fun ([x : num]) (+ x))", Ok (ArrowT NumT (ArrowT NumT NumT))),
+  ("(fun ([x : bool]) (if x false true))", Ok (ArrowT BoolT BoolT)),
+  ("(fun ([x : num] [y : num]) (if (< x y) x y))", Ok (ArrowT NumT (ArrowT NumT NumT))),
+  ("(fun ([x : num] [y : bool]) (if (< x y) x y))", Err "Function requires num but was called with bool"),
+  ("(fun ([x : bool]) (if x + *))", Ok (ArrowT BoolT (ArrowT NumT (ArrowT NumT NumT)))),
+  ("(fun ([op : (num -> (num -> num))] [x : num] [y : num]) (op x y))",
+    Ok (ArrowT (ArrowT NumT (ArrowT NumT NumT)) (ArrowT NumT (ArrowT NumT NumT))))
+  --("(forall (a) (fun ([x : a] [l : (list num)]) (cons x l)))", Ok (ForAllT "a" (ArrowT (VarT "a") (ArrowT (ListT NumT) (ListT (VarT "a"))))))
+  ]
+
+runProblem5Test (inputStr, expected) =
+  let actual = (parseAndCheckStr inputStr)
+  in case actual == expected of
+    True -> Ok ()
+    False -> Err ("Expected: " ++ (show expected) ++ "; Actual: " ++ (show actual) ++
+      " --- In: " ++ (show inputStr))
+
+runProblem5Tests =
+  map runProblem5Test problem5Tests
 runAllTests =
   [ runProblem1Tests,
     runProblem2Tests,
     runProblem3Tests,
-    runProblem4Tests
+    runProblem4Tests,
+    runProblem5Tests
     ]
