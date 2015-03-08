@@ -31,7 +31,7 @@ problem1Tests = [
 
 runProblem1Test (t1, t2, expected) =
   case ((t1 == t2) == expected) of
-    True -> Ok ""
+    True -> Ok ()
     False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show t1) ++ " == " ++ (show t2))
 
 runProblem1Tests =
@@ -51,7 +51,7 @@ problem2Tests = [
 
 runProblem2Test (t, expected) =
   case (freeTypeVars t []) == expected of
-    True -> Ok ""
+    True -> Ok ()
     False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show t))
 
 runProblem2Tests =
@@ -66,7 +66,7 @@ problem3Tests = [
 
 runProblem3Test (vIn, vOut, t, expected) =
   case (alphaRename vIn vOut t) == expected of
-    True -> Ok ""
+    True -> Ok ()
     False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show vIn) ++ " -> " ++ (show vOut) ++ ", " ++ (show t))
 
 runProblem3Tests =
@@ -96,9 +96,16 @@ problem4Tests = [
 runProblem4Test (v, forType, inType, expected) =
   let actual = (subst v forType inType)
   in case actual == expected of
-    True -> Ok ""
+    True -> Ok ()
     False -> Err ("Expected: " ++ (show expected) ++ "; Actual: " ++ (show actual))
 
 runProblem4Tests =
   map runProblem4Test problem4Tests
 
+
+runAllTests =
+  [ runProblem1Tests,
+    runProblem2Tests,
+    runProblem3Tests,
+    runProblem4Tests
+    ]

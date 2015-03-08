@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst, parseStr) where
 
 import Data.Char
 import Data.List
@@ -66,7 +66,44 @@ substInner var forType inType capturableTVars existingTVars = case inType of
 
 -- Problem 5.
 checkType :: DExpr -> TyContext -> Result Type
-checkType expr gamma = Err "implement me!"
+checkType expr gamma = case expr of
+  NumD _ -> Ok NumT
+  StringD _ -> Ok StringT
+  IfD condExpr consExpr altExpr -> case checkType condExpr gamma of
+    Ok BoolT ->
+      do consType <- checkType consExpr gamma
+         altType  <- checkType altExpr gamma
+         if consType == altType
+           then Ok consType
+           else Err ("Type mismatch between if expression condition and alternate: " ++
+             (show consType) ++ " != " ++ (show altType))
+    Err msg -> Err msg
+    Ok t -> Err ("If expression expects boolean condition, but found " ++ (show t))
+  VarD var -> case lookup var (snd gamma) of
+    Just t -> Ok t
+    otherwise -> Err ("Untyped variable `" ++ (show var) ++ "`")
+  FunD var inType body -> checkTypeApplicable var inType body gamma
+  AppD appExpr argExpr ->
+    do argType <- checkType argExpr gamma
+       appType <- checkType appExpr gamma
+       case appType of
+         ArrowT inType outType -> if inType == argType
+           then Ok outType
+           else Err ("Function requires " ++ (show inType) ++ " but was called with " ++
+             (show argType))
+         otherwise -> Err ("Application expects applicable, but found " ++ (show appType))
+  WithD var argExpr bodyExpr ->
+    do inType <- checkType argExpr gamma
+       checkTypeApplicable var inType bodyExpr gamma
+  ForAllD tVar bodyExpr ->
+    do bodyType <- checkType bodyExpr gamma
+       Ok (ForAllT tVar bodyType)
+  SpecD expr t -> Err "Not implemented yet."
+
+checkTypeApplicable :: Var -> Type -> DExpr -> TyContext -> Result Type
+checkTypeApplicable var inType body gamma =
+    do outType <- checkType body (fst gamma, (var, inType):(snd gamma))
+       Ok (ArrowT inType outType)
 
 -- Implementation complete.
 -- Generates a variable name that's distinct from every name in the argument list.
@@ -122,3 +159,10 @@ parseAndCheckStr str =
      expr <- parseExpr sexp
      cexp <- desugar expr
      checkType cexp ([], initialTypeEnv)
+
+parseStr :: String -> Result DExpr
+parseStr str =
+  let toks = tokenize str in
+  do (sexp, _) <- parseSExp toks
+     expr <- parseExpr sexp
+     desugar expr
