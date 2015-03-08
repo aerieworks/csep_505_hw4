@@ -37,6 +37,7 @@ runProblem1Test (t1, t2, expected) =
 runProblem1Tests =
   map runProblem1Test problem1Tests
 
+
 problem2Tests = [
   ((ArrowT (VarT "a") BoolT), ["a"]),
   ((PairT (PairT (VarT "a") (VarT "b")) (PairT (VarT "c") (VarT "d"))), ["a", "b", "c", "d"]),
@@ -56,3 +57,17 @@ runProblem2Test (t, expected) =
 runProblem2Tests =
   map runProblem2Test problem2Tests
 
+
+problem3Tests = [
+  ("a", "b", (ListT (VarT "a")), (ListT (VarT "b"))),
+  ("a", "b", (ForAllT "a" (PairT (VarT "a") BoolT)), (ForAllT "b" (PairT (VarT "b") BoolT))),
+  ("a", "b", (PairT (VarT "a") (VarT "c")), (PairT (VarT "b") (VarT "c")))
+  ]
+
+runProblem3Test (vIn, vOut, t, expected) =
+  case (alphaRename vIn vOut t) == expected of
+    True -> Ok ""
+    False -> Err ("Expected " ++ (show expected) ++ ": " ++ (show vIn) ++ " -> " ++ (show vOut) ++ ", " ++ (show t))
+
+runProblem3Tests =
+  map runProblem3Test problem3Tests

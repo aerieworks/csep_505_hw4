@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr, freeTypeVars) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename) where
 
 import Data.Char
 import Data.List
@@ -24,7 +24,13 @@ freeTypeVars ty bound = case ty of
 
 -- Problem 3.
 alphaRename :: TVar -> TVar -> Type -> Type
-alphaRename vIn vOut ty = ty -- implement me!
+alphaRename vIn vOut ty = case ty of
+  ArrowT t1 t2 -> (ArrowT (alphaRename vIn vOut t1) (alphaRename vIn vOut t2))
+  PairT t1 t2 -> (PairT (alphaRename vIn vOut t1) (alphaRename vIn vOut t2))
+  ListT t -> (ListT (alphaRename vIn vOut t))
+  ForAllT v t -> (ForAllT (if v == vIn then vOut else v) (alphaRename vIn vOut t))
+  VarT v -> (VarT (if v == vIn then vOut else v))
+  otherwise -> ty
 
 -- Implementation complete: nothing to do here. Use this helper in checkType.
 checkClosed :: Type -> [TVar] -> Result ()
