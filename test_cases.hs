@@ -39,8 +39,13 @@ runProblem1Tests =
 
 problem2Tests = [
   ((ArrowT (VarT "a") BoolT), ["a"]),
+  ((PairT (PairT (VarT "a") (VarT "b")) (PairT (VarT "c") (VarT "d"))), ["a", "b", "c", "d"]),
+  ((ListT (VarT "a")), ["a"]),
+  ((ListT StringT), []),
   ((ForAllT "a" (PairT (VarT "b") (VarT "a"))), ["b"]),
-  ((ForAllT "a" (PairT NumT (VarT "a"))), [])
+  ((ForAllT "a" (PairT NumT (VarT "a"))), []),
+  ((ForAllT "a" (PairT (ForAllT "b" (ArrowT (VarT "a") (VarT "a"))) (VarT "b"))), ["b"]),
+  ((PairT StringT (ForAllT "a" (PairT (VarT "a") (VarT "b")))), ["b"])
   ]
 
 runProblem2Test (t, expected) =
