@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst, parseStr) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst, parseStr, eraseStr) where
 
 import Data.Char
 import Data.List
@@ -94,7 +94,7 @@ checkType expr gamma = case expr of
          otherwise -> Err ("Application expects applicable, but found " ++ (show appType))
   WithD var argExpr bodyExpr ->
     do inType <- checkType argExpr gamma
-       ArrowT inType outType <- checkTypeApplicable var inType bodyExpr gamma
+       ArrowT _ outType <- checkTypeApplicable var inType bodyExpr gamma
        Ok outType
   ForAllD tVar bodyExpr ->
     do bodyType <- checkType bodyExpr gamma
@@ -172,3 +172,9 @@ parseStr str =
   do (sexp, _) <- parseSExp toks
      expr <- parseExpr sexp
      desugar expr
+
+eraseStr :: String -> Result CExpr
+eraseStr str =
+  do dExpr <- parseStr str
+     _     <- checkType dExpr ([], initialTypeEnv)
+     return (erase dExpr)

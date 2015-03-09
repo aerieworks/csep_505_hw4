@@ -3,6 +3,7 @@ module TestCases where
 import Expr
 import Result
 import TypeCheck
+import InterpCont
 
 problem1Tests = [
   (VarT "c", VarT "c", True),
@@ -138,7 +139,12 @@ problem5Tests = [
     Ok (ForAllT "a" (ArrowT (VarT "a") (ListT (VarT "a"))))),
   ("(forall (a) (fun ([x : a] [l : (list a)]) ((cons <a>) x l)))",
     Ok (ForAllT "a" (ArrowT (VarT "a") (ArrowT (ListT (VarT "a")) (ListT (VarT "a")))))),
+  ("(with* ([conscons " ++
+      "(forall (a) (fun ([x : a]) {(cons <a>) x ((cons <a>) x (empty <a>))}))]) " ++
+        "((conscons <num>) 5))",
+    Ok (ListT NumT)),
 
+  -- Problem 5 tests from discussion board
   ("1", Ok (NumT)),
   ("(+ 2 4)", Ok (NumT)),
   ("(fun ([x : num]) (= x 5))", Ok (ArrowT NumT BoolT)),
@@ -193,7 +199,17 @@ problem6Tests = [
   ("(forall (a) (fun ([x : a] [l : (list a)]) ((cons <a>) x l)))",
     FunC "x" (FunC "l"
       (AppC (AppC (VarC "cons") (VarC "x")) (VarC "l")))),
+  ("(with* ([conscons " ++
+      "(forall (a) (fun ([x : a]) {(cons <a>) x ((cons <a>) x (empty <a>))}))]) " ++
+        "((conscons <num>) 5))",
+    (AppC (FunC "conscons" (AppC (VarC "conscons") (NumC 5)))
+      (FunC "x" (AppC
+        (AppC (VarC "cons") (VarC "x"))
+        (AppC
+          (AppC (VarC "cons") (VarC "x"))
+          (VarC "empty")))))),
 
+  -- Taken from problem 5 tests from discussion board.
   ("(with* ([id (forall (a) (fun ([y : a]) y))] [selfapp (fun ([x : (forall a.(a -> a))]) ((x <(forall b.(b -> b))>) x))]) (selfapp id))",
     AppC (FunC "id"
       (AppC (FunC "selfapp" (AppC (VarC "selfapp") (VarC "id")))
@@ -231,11 +247,61 @@ runProblem6Tests =
   map runProblem6Test problem6Tests
 
 
+interpTests = [
+  ("5", Ok (NumV 5)),
+  ("\"abc\"", Ok (StringV "abc")),
+  ("true", Ok (BoolV True)),
+  ("false", Ok (BoolV False)),
+  ("(+ 5 3)", Ok (NumV 8)),
+  ("(+ false)", Err "Function requires num but was called with bool"),
+  ("(+ 5 false)", Err "Function requires num but was called with bool"),
+  ("(if (= 5 3) 1 2)", Ok (NumV 2)),
+  ("(if (= 5 3) false true)", Ok (BoolV True)),
+  ("((fun ([x : num]) (* x x)) 5)", Ok (NumV 25)),
+  ("((fun ([x : bool]) (if x false true)) true)", Ok (BoolV False)),
+  ("((fun ([x : num] [y : num]) (if (< x y) x y)) 5 10)", Ok (NumV 5)),
+  ("(((forall (a) (fun ([x : a]) ((cons <a>) x (empty <a>)))) <num>) 5)",
+    Ok (ConsV (NumV 5) EmptyV)),
+  ("(((forall (a) (fun ([x : a] [l : (list a)]) ((cons <a>) x l))) <bool>) " ++
+      "true ((cons <bool>) false ((cons <bool>) true (empty <bool>))))",
+    Ok (ConsV (BoolV True) (ConsV (BoolV False) (ConsV (BoolV True) EmptyV)))),
+  ("(with* ([conscons " ++
+      "(forall (a) (fun ([x : a]) {(cons <a>) x ((cons <a>) x (empty <a>))}))]) " ++
+        "((conscons <num>) 5))",
+    Ok (ConsV (NumV 5) (ConsV (NumV 5) EmptyV))),
+
+  -- Taken from problem 5 tests from discussion board
+  ("(((with* ([id (forall (a) (fun ([y : a]) y))] " ++
+      "[selfapp (fun ([x : (forall a.(a -> a))]) " ++
+      "((x <(forall b.(b -> b))>) x))]) (selfapp id)) <num>) 5)",
+    Ok (NumV 5)),
+  ("(with* ([two (forall (a) (fun ([s : (a -> a)] [z : a]) (s (s z))))] " ++
+           "[add (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                  "[m : ((a -> a) -> (a -> a))] " ++
+                                  "[s : (a -> a)] " ++
+                                  "[z : a]) ((n s) (m s z))))] " ++
+           "[mult (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                   "[m : ((a -> a) -> (a -> a))] " ++
+                                   "[s : (a -> a)]) (n (m s))))]) " ++
+    "(((mult <num>) ((add <num>) (two <num>) (two <num>)) (two <num>)) (+ 1) 0))",
+    Ok (NumV 8))
+  ]
+
+runInterpTest (inputStr, expected) =
+  let actual = interpStr inputStr in case (show actual) == (show expected) of
+    True -> Ok ()
+    False -> Err ("Expected: " ++ (show expected) ++ "; Actual: " ++ (show actual) ++
+      " --- In: " ++ (show inputStr))
+
+runInterpTests =
+  map runInterpTest interpTests
+
 runAllTests =
   [ runProblem1Tests,
     runProblem2Tests,
     runProblem3Tests,
     runProblem4Tests,
     runProblem5Tests,
-    runProblem6Tests
+    runProblem6Tests,
+    runInterpTests
     ]

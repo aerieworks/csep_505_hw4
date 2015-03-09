@@ -1,4 +1,4 @@
-module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, desugar, erase) where
+module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, desugar, erase, alphaEquiv) where
 
 import Data.List
 import Result
