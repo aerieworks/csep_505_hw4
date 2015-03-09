@@ -1,4 +1,4 @@
-module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst, parseStr, eraseStr) where
+module TypeCheck (checkType, parseAndCheckStr, freeTypeVars, alphaRename, subst, parseStr, eraseStr, checkClosed) where
 
 import Data.Char
 import Data.List
@@ -66,13 +66,19 @@ substInner var forType inType capturableTVars existingTVars = case inType of
 
 -- Problem 5.
 checkType :: DExpr -> TyContext -> Result Type
-checkType expr gamma = case expr of
+checkType expr gamma =
+  do t <- checkTypeInner expr gamma
+     _ <- checkClosed t (fst gamma)
+     return t
+
+checkTypeInner :: DExpr -> TyContext -> Result Type
+checkTypeInner expr gamma = case expr of
   NumD _ -> Ok NumT
   StringD _ -> Ok StringT
-  IfD condExpr consExpr altExpr -> case checkType condExpr gamma of
+  IfD condExpr consExpr altExpr -> case checkTypeInner condExpr gamma of
     Ok BoolT ->
-      do consType <- checkType consExpr gamma
-         altType  <- checkType altExpr gamma
+      do consType <- checkTypeInner consExpr gamma
+         altType  <- checkTypeInner altExpr gamma
          if consType == altType
            then Ok consType
            else Err ("Type mismatch between if expression condition and alternate: " ++
@@ -84,8 +90,8 @@ checkType expr gamma = case expr of
     otherwise -> Err ("Untyped variable `" ++ (show var) ++ "`")
   FunD var inType body -> checkTypeApplicable var inType body gamma
   AppD appExpr argExpr ->
-    do argType <- checkType argExpr gamma
-       appType <- checkType appExpr gamma
+    do argType <- checkTypeInner argExpr gamma
+       appType <- checkTypeInner appExpr gamma
        case appType of
          ArrowT inType outType -> if inType == argType
            then Ok outType
@@ -93,14 +99,14 @@ checkType expr gamma = case expr of
              (show argType))
          otherwise -> Err ("Application expects applicable, but found " ++ (show appType))
   WithD var argExpr bodyExpr ->
-    do inType <- checkType argExpr gamma
+    do inType <- checkTypeInner argExpr gamma
        ArrowT _ outType <- checkTypeApplicable var inType bodyExpr gamma
        Ok outType
   ForAllD tVar bodyExpr ->
-    do bodyType <- checkType bodyExpr gamma
+    do bodyType <- checkTypeInner bodyExpr gamma
        Ok (ForAllT tVar bodyType)
   SpecD expr specType ->
-    do exprType <- checkType expr gamma
+    do exprType <- checkTypeInner expr gamma
        case exprType of
          ForAllT tVar bodyType -> Ok (subst tVar specType bodyType)
          otherwise ->
@@ -108,7 +114,7 @@ checkType expr gamma = case expr of
 
 checkTypeApplicable :: Var -> Type -> DExpr -> TyContext -> Result Type
 checkTypeApplicable var inType body gamma =
-    do outType <- checkType body (fst gamma, (var, inType):(snd gamma))
+    do outType <- checkTypeInner body (fst gamma, (var, inType):(snd gamma))
        Ok (ArrowT inType outType)
 
 -- Implementation complete.

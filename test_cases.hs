@@ -130,6 +130,7 @@ problem5Tests = [
   ("(if = false true)", Err "If expression expects boolean condition, but found (num -> (num -> bool))"),
   ("(if (= 5 3) 5 true)",
     Err "Type mismatch between if expression condition and alternate: num != bool"),
+  ("(fun ([x : a]) x)", Err "unbound type var(s) in (a -> a): [\"a\",\"a\"]"),
   ("(fun ([x : num]) (* x x))", Ok (ArrowT NumT NumT)),
   ("(fun ([x : num]) (+ x))", Ok (ArrowT NumT (ArrowT NumT NumT))),
   ("(fun ([x : bool]) (if x false true))", Ok (ArrowT BoolT BoolT)),
@@ -149,6 +150,10 @@ problem5Tests = [
   ("(with* ([ mkpair (forall (a b) (fun ([x : a] [y : b]) { (pair <a b>) x y }))]) " ++
       "((mkpair <bool num>) true 5))",
     Ok (PairT BoolT NumT)),
+  ("(forall (a b) (fun ([x : a] [y : b]) " ++
+      "((cons <(a, b)>) ((pair <a b>) x y) (empty <(a, b)>))))",
+    Ok (ForAllT "a" (ForAllT "b" (ArrowT (VarT "a") (ArrowT (VarT "b")
+      (ListT (PairT (VarT "a") (VarT "b")))))))),
 
   -- Problem 5 tests from discussion board
   ("1", Ok (NumT)),
@@ -214,6 +219,10 @@ problem6Tests = [
         (AppC
           (AppC (VarC "cons") (VarC "x"))
           (VarC "empty")))))),
+  ("(forall (a b) (fun ([x : a] [y : b]) " ++
+      "((cons <(a, b)>) ((pair <a b>) x y) (empty <(a, b)>))))",
+    (FunC "x" (FunC "y" (AppC (AppC (VarC "cons")
+      (AppC (AppC (VarC "pair") (VarC "x")) (VarC "y"))) (VarC "empty"))))),
 
   -- Taken from problem 5 tests from discussion board.
   ("(with* ([id (forall (a) (fun ([y : a]) y))] [selfapp (fun ([x : (forall a.(a -> a))]) ((x <(forall b.(b -> b))>) x))]) (selfapp id))",
@@ -278,6 +287,9 @@ interpTests = [
   ("(with* ([ mkpair (forall (a b) (fun ([x : a] [y : b]) { (pair <a b>) x y }))]) " ++
       "((mkpair <bool num>) true 5))",
     Ok (PairV (BoolV True) (NumV 5))),
+  ("(((forall (a b) (fun ([x : a] [y : b]) " ++
+      "((cons <(a, b)>) ((pair <a b>) x y) (empty <(a, b)>)))) <num bool>) 5 true)",
+    Ok (ConsV (PairV (NumV 5) (BoolV True)) EmptyV)),
 
   -- Taken from problem 5 tests from discussion board
   ("(((with* ([id (forall (a) (fun ([y : a]) y))] " ++
