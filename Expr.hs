@@ -1,4 +1,4 @@
-module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, desugar) where
+module Expr (Var, Expr(..), CExpr(..), DExpr(..), Type(..), TVar, parseExpr, desugar, erase) where
 
 import Data.List
 import Result
@@ -244,4 +244,14 @@ desugar (SpecE expr tys) =
 
 -- Problem 6.
 erase :: DExpr -> CExpr
-erase _ = VarC "implement me!"
+erase dExpr = case dExpr of
+  NumD v -> NumC v
+  StringD v -> StringC v
+  IfD dCond dCons dAlt -> IfC (erase dCond) (erase dCons) (erase dAlt)
+  VarD v -> VarC v
+  FunD v _ dBody -> FunC v (erase dBody)
+  AppD dApp dArg -> AppC (erase dApp) (erase dArg)
+  WithD v dArg dBody -> AppC (FunC v (erase dBody)) (erase dArg)
+  ForAllD _ expr -> erase expr
+  SpecD expr _ -> erase expr
+

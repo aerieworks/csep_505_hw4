@@ -165,10 +165,77 @@ runProblem5Test (inputStr, expected) =
 
 runProblem5Tests =
   map runProblem5Test problem5Tests
+
+
+problem6Tests = [
+  ("5", NumC 5),
+  ("\"abc\"", StringC "abc"),
+  ("x", VarC "x"),
+  ("true", VarC "true"),
+  ("false", VarC "false"),
+  ("+", VarC "+"),
+  ("(+ 5)", AppC (VarC "+") (NumC 5)),
+  ("(+ 5 3)", AppC (AppC (VarC "+") (NumC 5)) (NumC 3)),
+  ("(+ false)", AppC (VarC "+") (VarC "false")),
+  ("(+ 5 false)", AppC (AppC (VarC "+") (NumC 5)) (VarC "false")),
+  ("(if (= 5 3) 1 2)", IfC (AppC (AppC (VarC "=") (NumC 5)) (NumC 3)) (NumC 1) (NumC 2)),
+  ("(if (= 5 3) false true)",
+    IfC (AppC (AppC (VarC "=") (NumC 5)) (NumC 3)) (VarC "false") (VarC "true")),
+  ("(fun ([x : num]) (* x x))", FunC "x" (AppC (AppC (VarC "*") (VarC "x")) (VarC "x"))),
+  ("(fun ([x : num]) (+ x))", FunC "x" (AppC (VarC "+") (VarC "x"))),
+  ("(fun ([x : bool]) (if x false true))",
+    FunC "x" (IfC (VarC "x") (VarC "false") (VarC "true"))),
+  ("(fun ([x : num] [y : num]) (if (< x y) x y))",
+    FunC "x" (FunC "y"
+      (IfC (AppC (AppC (VarC "<") (VarC "x")) (VarC "y")) (VarC "x") (VarC "y")))),
+  ("(forall (a) (fun ([x : a]) ((cons <a>) x (empty <a>))))",
+    FunC "x" (AppC (AppC (VarC "cons") (VarC "x")) (VarC "empty"))),
+  ("(forall (a) (fun ([x : a] [l : (list a)]) ((cons <a>) x l)))",
+    FunC "x" (FunC "l"
+      (AppC (AppC (VarC "cons") (VarC "x")) (VarC "l")))),
+
+  ("(with* ([id (forall (a) (fun ([y : a]) y))] [selfapp (fun ([x : (forall a.(a -> a))]) ((x <(forall b.(b -> b))>) x))]) (selfapp id))",
+    AppC (FunC "id"
+      (AppC (FunC "selfapp" (AppC (VarC "selfapp") (VarC "id")))
+        (FunC "x" (AppC (VarC "x") (VarC "x")))))
+      (FunC "y" (VarC "y"))),
+  ("(with* ([two (forall (a) (fun ([s : (a -> a)] [z : a]) (s (s z))))] " ++
+           "[add (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                  "[m : ((a -> a) -> (a -> a))] " ++
+                                  "[s : (a -> a)] " ++
+                                  "[z : a]) ((n s) (m s z))))] " ++
+           "[mult (forall (a) (fun ([n : ((a -> a) -> (a -> a))] " ++
+                                   "[m : ((a -> a) -> (a -> a))] " ++
+                                   "[s : (a -> a)]) (n (m s))))]) " ++
+    "(((mult <num>) ((add <num>) (two <num>) (two <num>)) (two <num>)) (+ 1) 0))",
+    AppC (FunC "two" (AppC (FunC "add" (AppC (FunC "mult"
+      (AppC (AppC (AppC
+            (AppC (VarC "mult") (AppC (AppC (VarC "add") (VarC "two")) (VarC "two")))
+            (VarC "two"))
+          (AppC (VarC "+") (NumC 1)))
+        (NumC 0)))
+      (FunC "n" (FunC "m" (FunC "s" (AppC (VarC "n") (AppC (VarC "m") (VarC "s"))))))))
+      (FunC "n" (FunC "m" (FunC "s" (FunC "z"
+        (AppC (AppC (VarC "n") (VarC "s")) (AppC (AppC (VarC "m") (VarC "s")) (VarC "z")))))))))
+      (FunC "s" (FunC "z" (AppC (VarC "s") (AppC (VarC "s") (VarC "z"))))))
+  ]
+
+runProblem6Test (inputStr, expected) =
+  do expr <- parseStr inputStr
+     let actual = erase expr in case actual == expected of
+       True -> Ok ()
+       False -> Err ("Expected: " ++ (show expected) ++ "; Actual: " ++ (show actual) ++
+         " --- In: " ++ (show inputStr))
+
+runProblem6Tests =
+  map runProblem6Test problem6Tests
+
+
 runAllTests =
   [ runProblem1Tests,
     runProblem2Tests,
     runProblem3Tests,
     runProblem4Tests,
-    runProblem5Tests
+    runProblem5Tests,
+    runProblem6Tests
     ]
