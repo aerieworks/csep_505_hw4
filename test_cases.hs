@@ -27,7 +27,10 @@ problem1Tests = [
   ((PairT (VarT "a") NumT), (PairT BoolT (VarT "b")), False),
   ((ForAllT "a" (ForAllT "b" (PairT (VarT "a") (VarT "b")))),
     (ForAllT "a" (ForAllT "a" (PairT (VarT "a") (VarT "a")))),
-    False)
+    False),
+  ((ForAllT "a" (ForAllT "b" (PairT (VarT "b") (VarT "b")))),
+    (ForAllT "a" (ForAllT "a" (PairT (VarT "a") (VarT "a")))),
+    True)
   ]
 
 runProblem1Test (t1, t2, expected) =
@@ -143,6 +146,9 @@ problem5Tests = [
       "(forall (a) (fun ([x : a]) {(cons <a>) x ((cons <a>) x (empty <a>))}))]) " ++
         "((conscons <num>) 5))",
     Ok (ListT NumT)),
+  ("(with* ([ mkpair (forall (a b) (fun ([x : a] [y : b]) { (pair <a b>) x y }))]) " ++
+      "((mkpair <bool num>) true 5))",
+    Ok (PairT BoolT NumT)),
 
   -- Problem 5 tests from discussion board
   ("1", Ok (NumT)),
@@ -269,6 +275,9 @@ interpTests = [
       "(forall (a) (fun ([x : a]) {(cons <a>) x ((cons <a>) x (empty <a>))}))]) " ++
         "((conscons <num>) 5))",
     Ok (ConsV (NumV 5) (ConsV (NumV 5) EmptyV))),
+  ("(with* ([ mkpair (forall (a b) (fun ([x : a] [y : b]) { (pair <a b>) x y }))]) " ++
+      "((mkpair <bool num>) true 5))",
+    Ok (PairV (BoolV True) (NumV 5))),
 
   -- Taken from problem 5 tests from discussion board
   ("(((with* ([id (forall (a) (fun ([y : a]) y))] " ++
